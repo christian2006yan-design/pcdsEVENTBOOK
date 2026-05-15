@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PCDS Booking</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Segoe UI;
+    background:#f4f6fb;
+}
+
+.header{
+    background:#0f172a;
+    color:white;
+    padding:12px 25px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.header-left{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+.logo{
+    width:55px;
+    height:55px;
+    background:white;
+    padding:5px;
+    border-radius:10px;
+}
+
+.container{
+    padding:20px;
+    max-width:1000px;
+    margin:auto;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+.row{
+    display:flex;
+    gap:10px;
+}
+
+.row input{
+    width:100%;
+}
+
+form input, form select{
+    width:100%;
+    padding:12px;
+    margin-bottom:12px;
+    border-radius:8px;
+    border:1px solid #ddd;
+    box-sizing:border-box;
+}
+
+form button{
+    width:100%;
+    padding:12px;
+    background:#2c4373;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+th{
+    background:#0f172a;
+    color:white;
+    padding:12px;
+}
+
+td{
+    text-align:center;
+    padding:12px;
+    border-bottom:1px solid #eee;
+}
+
+label{
+    font-size:12px;
+    font-weight:500;
+    color:#475569;
+    margin-bottom:3px;
+    display:block;
+}
+
+.badge{
+    background:#e2e8f0;
+    padding:4px 8px;
+    border-radius:5px;
+    font-size:12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <img src="PCDS.png" class="logo">
+        <b>PCDS Event Center</b>
+    </div>
+
+    <a href="login.html" style="color:white;">Logout</a>
+</div>
+
+<div class="container">
+
+<!-- MESSAGE BOX (STATIC HTML VERSION) -->
+<div style="
+    background:#e6ffe6;
+    color:#006600;
+    padding:12px;
+    margin-bottom:15px;
+    border-left:5px solid green;
+    border-radius:8px;
+">
+WELCOME
+
+</div>
+<div id="confirmBox" style="
+    display:none;
+    padding:12px;
+    margin-bottom:15px;
+    border-radius:8px;
+    background:#fff4e6;
+    border-left:5px solid orange;
+    color:#995200;
+">
+    <div id="confirmText"></div>
+    <br>
+    <button onclick="confirmYes()" style="padding:8px 12px;background:green;color:white;border:none;border-radius:6px;">Yes</button>
+    <button onclick="confirmNo()" style="padding:8px 12px;background:red;color:white;border:none;border-radius:6px;">No</button>
+</div>
+<div id="messageBox" style="
+    display:none;
+    padding:12px;
+    margin-bottom:15px;
+    border-radius:8px;
+    border-left:5px solid green;
+    background:#e6ffe6;
+    color:#006600;
+    font-weight:500;
+"></div>
+<!-- FORM (NO PHP SUBMISSION) -->
+<div class="card">
+<h3>Create Booking</h3>
+
+<form>
+
+<input id="eventName" placeholder="Event Name" required>
+<input id="fullName" placeholder="Full Name" required>
+
+<div class="row">
+
+    <div style="width:100%;">
+        <label>START</label>
+        <input id="dateStart" type="date" required>
+        <input id="timeStart" type="time" required>
+    </div>
+
+    <div style="width:100%;">
+        <label>END</label>
+        <input id="dateEnd" type="date" required>
+        <input id="timeEnd" type="time" required>
+    </div>
+
+</div>
+
+<select id="course">
+<option>BSIT</option>
+<option>BSCRIM</option>
+<option>BSHM</option>
+<option>BSN</option>
+<option>BSRT</option>
+</select>
+
+<select id="role">
+<option>Student</option>
+<option>Teacher</option>
+</select>
+
+<!-- 👇 IMPORTANT BUTTON -->
+<button type="button" onclick="bookNow()">Book Now</button>
+
+</form>
+</div>
+
+<!-- TABLE (STATIC SAMPLE DATA ONLY) -->
+<table>
+  <thead>
+    <tr>
+      <th>Booking ID</th>
+      <th>Booked By</th>
+      <th>Event</th>
+      <th>Start</th>
+      <th>End</th>
+      <th>Role</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody id="guestBookingTable">
+    <tr>
+        <td colspan="8" style="padding:20px;color:gray;">
+            No bookings yet
+        </td>
+    </tr>
+</tbody>
+</table>
+
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBukgYgCfvIi_Z8CJ8PQi2TiHkXwbp2GEg",
+  authDomain: "pcds-booking-6727c.firebaseapp.com",
+  projectId: "pcds-booking-6727c",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const tableBody = document.getElementById("guestBookingTable");
+
+
+// 👉 IBUTANG NI DIRI (SHOW MESSAGE FUNCTION)
+function showMessage(text, type="success") {
+  const box = document.getElementById("messageBox");
+
+  box.style.display = "block";
+  box.innerText = text;
+
+  if (type === "success") {
+    box.style.background = "#e6ffe6";
+    box.style.color = "#006600";
+    box.style.borderLeft = "5px solid green";
+  } 
+  else if (type === "error") {
+    box.style.background = "#ffe6e6";
+    box.style.color = "#990000";
+    box.style.borderLeft = "5px solid red";
+  } 
+  else if (type === "warning") {
+    box.style.background = "#fff4e6";
+    box.style.color = "#995200";
+    box.style.borderLeft = "5px solid orange";
+  }
+
+  setTimeout(() => {
+    box.style.display = "none";
+  }, 3000);
+}
+
+// 🔥 FUNCTION TO LOAD BOOKINGS
+async function loadBookings() {
+  tableBody.innerHTML = "";
+
+  const snapshot = await getDocs(collection(db, "bookings"));
+
+  if (snapshot.empty) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7" style="padding:20px;color:gray;">
+          No bookings yet
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  snapshot.forEach(docItem => {
+    const data = docItem.data();
+
+    tableBody.innerHTML += `
+      <tr>
+       <td>${data.bookingID}</td>
+        <td>${data.fullName}</td>
+        <td>${data.eventName}</td>
+        <td>${data.dateStart} ${data.timeStart}</td>
+        <td>${data.dateEnd} ${data.timeEnd}</td>
+        <td>${data.role}</td>
+      <td>${data.status}</td>
+
+<td>
+${
+data.userEmail === localStorage.getItem("loggedInUser")
+?
+`<button onclick="cancelBooking('${docItem.id}')"
+style="background:red;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">
+Cancel
+</button>`
+:
+""
+}
+</td>
+      </tr>
+    `;
+  });
+}
+
+// 🔥 BOOK NOW FUNCTION
+window.bookNow = async function() {
+    // 🔥 convert input to real Date
+const newStart = new Date(
+  document.getElementById("dateStart").value + "T" +
+  document.getElementById("timeStart").value
+);
+
+const newEnd = new Date(
+  document.getElementById("dateEnd").value + "T" +
+  document.getElementById("timeEnd").value
+);
+
+if (newStart >= newEnd) {
+  showMessage("❌ Invalid time: End must be after Start", "error");
+  return;
+}
+
+const snapshot = await getDocs(collection(db, "bookings"));
+
+let hasConflict = false;
+
+snapshot.forEach(docItem => {
+  const d = docItem.data();
+
+  const existingStart = new Date(d.dateStart + "T" + d.timeStart);
+  const existingEnd = new Date(d.dateEnd + "T" + d.timeEnd);
+
+  // 🔥 STRICT OVERLAP CHECK (NO CONFLICT ALLOWED)
+  if (newStart < existingEnd && newEnd > existingStart) {
+    hasConflict = true;
+  }
+});
+
+if (hasConflict) {
+  showMessage("❌ Sorry, this time is already booked!", "error");
+  return;
+}
+
+  const confirmBook = confirm("Are you sure you want to book this?");
+
+  if (!confirmBook) {
+    showMessage("Booking cancelled", "warning");
+    return;
+  }
+const snapshotCount = await getDocs(collection(db, "bookings"));
+const bookingNumber = snapshotCount.size + 1;
+
+const bookingID = "PCDS-" + String(bookingNumber).padStart(3, "0");
+  await addDoc(collection(db, "bookings"), {
+    bookingID: bookingID,
+    eventName: document.getElementById("eventName").value,
+    fullName: document.getElementById("fullName").value,
+    dateStart: document.getElementById("dateStart").value,
+    timeStart: document.getElementById("timeStart").value,
+    dateEnd: document.getElementById("dateEnd").value,
+    timeEnd: document.getElementById("timeEnd").value,
+    course: document.getElementById("course").value,
+    role: document.getElementById("role").value,
+    status: "Pending",
+    userEmail: localStorage.getItem("loggedInUser"),
+    createdAt: new Date()
+  });
+
+  showMessage("Booking sent successfully!", "success");
+  loadBookings();
+}
+window.cancelBooking = async function(id) {
+  const confirmCancel = confirm("Sure ka mo cancel ka?");
+
+  if (!confirmCancel) return;
+
+  await deleteDoc(doc(db, "bookings", id));
+
+showMessage("Booking cancelled", "warning");
+  loadBookings();
+};
+
+// 🔥 LOAD BOOKINGS ON PAGE LOAD
+loadBookings();
+</script>
+</body>
+</html> 

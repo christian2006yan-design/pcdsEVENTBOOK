@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Bookings</title>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI;
+background:#f5f7fb;
+display:flex;
+}
+
+.sidebar{
+width:250px;
+background:#0f172a;
+color:white;
+height:100vh;
+padding:20px;
+position:fixed;
+}
+
+.sidebar img{
+width:90px;
+height:90px;
+object-fit:contain;
+display:block;
+margin:10px auto;
+background:white;
+padding:10px;
+border-radius:12px;
+box-shadow:0 3px 10px rgba(0,0,0,0.4);
+}
+
+.sidebar h2{
+text-align:center;
+margin-top:10px;
+font-size:18px;
+}
+
+.sidebar a{
+display:block;
+color:#cbd5e1;
+padding:12px;
+margin-top:10px;
+text-decoration:none;
+border-radius:8px;
+}
+
+.sidebar a:hover{
+background:#1e293b;
+color:white;
+}
+
+.main{
+margin:20px;
+margin-left:290px;
+padding:20px;
+width:calc(100% - 310px);
+}
+
+table{
+width:100%;
+margin-top:20px;
+border-collapse:collapse;
+background:white;
+border-radius:10px;
+overflow:hidden;
+box-shadow:0 5px 15px rgba(0,0,0,0.08);
+}
+
+th{
+background:#0f172a;
+color:white;
+padding:12px;
+}
+
+td{
+padding:10px;
+text-align:center;
+border-bottom:1px solid #eee;
+font-size:15px;
+}
+
+.btn{
+padding:6px 10px;
+border:none;
+border-radius:6px;
+color:white;
+cursor:pointer;
+font-size:12px;
+margin:2px;
+}
+
+.approve{background:#22c55e;}
+.delete{background:#ef4444;}
+.edit{background:#f59e0b;}
+.done{background:#0f172a;}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<img src="PCDS.png">
+<h2>ADMIN</h2>
+
+<a href="dashboard.html">Dashboard</a>
+<a href="bookings.html">Bookings</a>
+<a href="login.html">Logout</a>
+</div>
+
+<div class="main">
+
+<h2>Bookings</h2>
+
+<table>
+<thead>
+<tr>
+<th>Booking ID</th>
+<th>Name</th>
+<th>Event</th>
+<th>Course</th>
+<th>Role</th>
+<th>Start</th>
+<th>End</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody id="bookingTable"></tbody>
+</table>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+getFirestore,
+collection,
+getDocs,
+updateDoc,
+doc,
+deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyBukgYgCfvIi_Z8CJ8PQi2TiHkXwbp2GEg",
+authDomain: "pcds-booking-6727c.firebaseapp.com",
+projectId: "pcds-booking-6727c",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const table = document.getElementById("bookingTable");
+
+async function loadBookings() {
+table.innerHTML = "";
+
+const snapshot = await getDocs(collection(db, "bookings"));
+
+snapshot.forEach((docItem) => {
+const data = docItem.data();
+
+table.innerHTML += `
+<tr>
+
+<td>
+<span style="background:#0f172a;color:white;padding:6px 14px;border-radius:20px;font-weight:bold;">
+${data.bookingID || ""}
+</span>
+</td>
+
+<td>${data.fullName || "N/A"}</td>
+<td>${data.eventName || "N/A"}</td>
+<td>${data.course || "N/A"}</td>
+<td>${data.role || "N/A"}</td>
+
+<td>${data.dateStart || ""}<br>${data.timeStart || ""}</td>
+<td>${data.dateEnd || ""}<br>${data.timeEnd || ""}</td>
+
+<td>
+${
+data.status === "Approved"
+? `<span style="background:#22c55e;color:white;padding:6px 12px;border-radius:6px;font-weight:bold;">APPROVED</span>`
+: data.status === "Disapproved"
+? `<span style="background:#ef4444;color:white;padding:6px 12px;border-radius:6px;font-weight:bold;">DISAPPROVED</span>`
+: data.status === "Done"
+? `<span style="background:#0f172a;color:white;padding:6px 12px;border-radius:6px;font-weight:bold;">DONE</span>`
+: `<span style="background:#f59e0b;color:white;padding:6px 12px;border-radius:6px;font-weight:bold;">PENDING</span>`
+}
+</td>
+
+<td>
+
+${
+data.status === "Pending" || !data.status
+? `
+<button class="btn approve" onclick="approveBooking('${docItem.id}')">Approve</button>
+<button class="btn delete" onclick="disapproveBooking('${docItem.id}')">Disapprove</button>
+`
+: data.status === "Approved" || data.status === "Disapproved"
+? `
+<button class="btn done" onclick="markDone('${docItem.id}')">DONE</button>
+`
+: `
+<button class="btn done" style="cursor:default;background:#0f172a;">DONE</button>
+`
+}
+
+<button class="btn edit"
+onclick="editBooking('${docItem.id}','${data.fullName || ""}','${data.eventName || ""}')">
+Edit
+</button>
+
+<button class="btn delete"
+onclick="deleteBooking('${docItem.id}')">
+Delete
+</button>
+
+</td>
+
+</tr>
+`;
+});
+}
+
+// APPROVE
+window.approveBooking = async function(id) {
+await updateDoc(doc(db, "bookings", id), {
+status: "Approved"
+});
+loadBookings();
+};
+
+// DISAPPROVE
+window.disapproveBooking = async function(id) {
+await updateDoc(doc(db, "bookings", id), {
+status: "Disapproved"
+});
+loadBookings();
+};
+
+// DONE
+window.markDone = async function(id) {
+await updateDoc(doc(db, "bookings", id), {
+status: "Done"
+});
+loadBookings();
+};
+
+// EDIT
+window.editBooking = async function(id, oldName, oldEvent) {
+const newName = prompt("Edit Full Name:", oldName);
+const newEvent = prompt("Edit Event Name:", oldEvent);
+
+if (!newName || !newEvent) return;
+
+await updateDoc(doc(db, "bookings", id), {
+fullName: newName,
+eventName: newEvent
+});
+
+loadBookings();
+};
+
+// DELETE
+window.deleteBooking = async function(id) {
+const confirmDelete = confirm("Delete this booking?");
+if (!confirmDelete) return;
+
+await deleteDoc(doc(db, "bookings", id));
+loadBookings();
+};
+
+loadBookings();
+</script>
+
+</body>
+</html>

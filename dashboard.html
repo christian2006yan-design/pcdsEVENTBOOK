@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI;
+background:#f5f7fb;
+display:flex;
+}
+
+.sidebar{
+width:250px;
+background:#0f172a;
+color:white;
+height:100vh;
+padding:20px;
+position:fixed;
+}
+
+.sidebar img{
+width:90px;
+height:90px;
+object-fit:contain;
+display:block;
+margin:10px auto;
+background:white;
+padding:10px;
+border-radius:12px;
+box-shadow:0 3px 10px rgba(0,0,0,0.4);
+}
+
+.sidebar h2{
+text-align:center;
+margin-top:10px;
+font-size:18px;
+}
+
+.sidebar a{
+display:block;
+color:#cbd5e1;
+padding:12px;
+margin-top:10px;
+text-decoration:none;
+border-radius:8px;
+}
+
+.sidebar a:hover{
+background:#1e293b;
+color:white;
+}
+
+.main{
+margin:20px;
+margin-left:290px;
+padding:20px;
+width:calc(100% - 310px);
+}
+
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:15px;
+}
+
+.card{
+padding:20px;
+border-radius:10px;
+color:white;
+}
+
+.c1,.c2,.c3,.c4{
+background:#64748b;
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<img src="PCDS.png">
+<h2>ADMIN</h2>
+
+<a href="dashboard.html">Dashboard</a>
+<a href="bookings.html">Bookings</a>
+<a href="login.html">Logout</a>
+</div>
+
+<div class="main">
+
+<h2>Dashboard</h2>
+
+<div class="cards">
+<div class="card c1">Total <h2 id="total">0</h2></div>
+<div class="card c2">Pending <h2 id="pending">0</h2></div>
+<div class="card c3">Approved <h2 id="approved">0</h2></div>
+<div class="card c4">Completed <h2 id="completed">0</h2></div>
+</div>
+
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyBukgYgCfvIi_Z8CJ8PQi2TiHkXwbp2GEg",
+authDomain: "pcds-booking-6727c.firebaseapp.com",
+projectId: "pcds-booking-6727c",
+storageBucket: "pcds-booking-6727c.firebasestorage.app",
+messagingSenderId: "193663771576",
+appId: "1:193663771576:web:413ec2d11294412e97a54d"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+async function loadDashboard(){
+
+const snapshot = await getDocs(collection(db, "bookings"));
+
+let total = 0;
+let pending = 0;
+let approved = 0;
+let completed = 0;
+
+snapshot.forEach((doc)=>{
+  const data = doc.data();
+
+  total++;
+
+  if(data.status === "Pending") pending++;
+  if(data.status === "Approved") approved++;
+  if(data.status === "Completed") completed++;
+});
+
+// update UI
+document.getElementById("total").innerText = total;
+document.getElementById("pending").innerText = pending;
+document.getElementById("approved").innerText = approved;
+document.getElementById("completed").innerText = completed;
+
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
