@@ -387,7 +387,7 @@ const bookingID = "PCDS-" + String(bookingNumber).padStart(3, "0");
   loadBookings();
 }
 window.cancelBooking = async function(id) {
-  const confirmCancel = confirm("Sure ka mo cancel ka?");
+  const confirmCancel = confirm("are you sure?");
 
   if (!confirmCancel) return;
 
