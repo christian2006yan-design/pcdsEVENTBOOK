@@ -147,9 +147,9 @@ window.loginUser = async function(){
     }
 
     // Check password length
-    if(password.length < 10){
+    if(password.length < 9){
         errorBox.style.display = "block";
-        errorBox.innerText = "Password must be at least 10 characters";
+        errorBox.innerText = "Password must be at least 9 characters";
         return;
     }
 
